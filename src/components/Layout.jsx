@@ -46,15 +46,15 @@ const Layout = ({ children, user, onLogout }) => {
       </div>
 
       {/* Sidebar */}
-      <aside className="hidden lg:block fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-40">
-        <div className="p-6 border-b border-gray-200">
+      <aside className="hidden lg:flex lg:flex-col fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-40">
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <img 
             src="https://blogger.googleusercontent.com/img/a/AVvXsEiLjXSEEYTWugcR8F-Nm1FfBTZVY1hjfvRrQUK1sWxCGuxtKHgpsa85Om7uCvcsmZ9LQp9TVzMM7OiE_JjXVbISJuXw6D4EhMIQujIS96qHTADGcbZmx0VkGocywIQtbsci7FOFmr58pSaF8Cnt_9TFUGS6OQSO0lpE8a2sL-uaa8woFOliXjHUuuC4cpVd"
             alt="Rosse Vita Logo"
             className="h-16 mx-auto"
           />
         </div>
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname.startsWith(item.path);
@@ -74,7 +74,7 @@ const Layout = ({ children, user, onLogout }) => {
             );
           })}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 flex-shrink-0">
           <Link
             to="/configuracion"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-all mb-2 ${
@@ -103,9 +103,9 @@ const Layout = ({ children, user, onLogout }) => {
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="lg:hidden fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-[60] pt-16"
+            className="lg:hidden fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-[60] pt-16 flex flex-col"
           >
-            <nav className="p-4 space-y-2">
+            <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname.startsWith(item.path);
@@ -126,7 +126,7 @@ const Layout = ({ children, user, onLogout }) => {
                 );
               })}
             </nav>
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+            <div className="p-4 border-t border-gray-200 flex-shrink-0">
               <Link
                 to="/configuracion"
                 onClick={() => setSidebarOpen(false)}
