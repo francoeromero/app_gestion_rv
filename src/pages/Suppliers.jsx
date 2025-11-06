@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/customSupabaseClient';
 import SupplierDialog from '@/components/SupplierDialog';
 
 const Suppliers = ({ user }) => {
@@ -165,25 +165,25 @@ const Suppliers = ({ user }) => {
   return (
     <>
       <Helmet>
-        <title>Insumos - Rosse Vita Eventos</title>
-        <meta name="description" content="Registra y gestiona las compras" />
+        <title>Proveedores - Rosse Vita Eventos</title>
+        <meta name="description" content="Gestiona tus proveedores de servicios" />
       </Helmet>
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-gray-800">Insumos</h2>
-            <p className="text-gray-600 mt-1">Registra y gestiona las compras</p>
+            <h2 className="text-3xl font-bold text-gray-800">Proveedores</h2>
+            <p className="text-gray-600 mt-1">Gestiona tus proveedores de servicios</p>
           </div>
           <Button
             onClick={() => {
-              setEditingSupply(null);
+              setEditingSupplier(null);
               setDialogOpen(true);
             }}
             className="bg-pink-600 hover:bg-pink-700"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Nuevo Insumo
+            Nuevo Proveedor
           </Button>
         </div>
 
