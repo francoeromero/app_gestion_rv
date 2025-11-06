@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   CheckSquare,
-  CalendarDays
+  CalendarDays,
+  Tags
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +28,7 @@ const Layout = ({ children, user, onLogout }) => {
     { path: '/empleados', icon: Users, label: 'Empleados' },
     { path: '/insumos', icon: Package, label: 'Insumos' },
     { path: '/proveedores', icon: Truck, label: 'Proveedores' },
+    { path: '/promos', icon: Tags, label: 'Promos' },
     { path: '/tareas', icon: CheckSquare, label: 'Tareas' },
     { path: '/reportes', icon: BarChart3, label: 'Reportes' },
   ];

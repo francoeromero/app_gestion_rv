@@ -55,7 +55,7 @@ const Login = () => {
       const usuarioEmails = [
         'parastream01@gmail.com',
         'romerofranco3474@gmail.com',
-        // Agrega aquí los emails que quieras permitir
+        
       ];
       
       const allAllowedEmails = [...adminEmails, ...usuarioEmails];

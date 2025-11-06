@@ -10,6 +10,7 @@ import Dashboard from '@/pages/Dashboard';
 import Employees from '@/pages/Employees';
 import Supplies from '@/pages/Supplies';
 import Suppliers from '@/pages/Suppliers';
+import Promos from '@/pages/Promos';
 import Reports from '@/pages/Reports';
 import Tasks from '@/pages/Tasks';
 import Settings from '@/pages/Settings';
@@ -139,6 +140,7 @@ function App() {
         <Route path="/empleados" element={<Employees user={currentUser} />} />
         <Route path="/insumos" element={<Supplies user={currentUser} />} />
         <Route path="/proveedores" element={<Suppliers user={currentUser} />} />
+        <Route path="/promos" element={<Promos user={currentUser} />} />
         <Route path="/eventos" element={<Events user={currentUser} />} />
         <Route path="/tareas" element={<Tasks user={currentUser} />} />
         <Route path="/reportes" element={<Reports user={currentUser} />} />
