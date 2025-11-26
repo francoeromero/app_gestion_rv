@@ -59,12 +59,31 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
 
       if (error) throw error;
 
-      const formattedComments = data?.map(comment => ({
-        id: comment.id,
-        text: comment.mensaje,
-        author: 'Usuario', // Por ahora usar un nombre genérico, podemos mejorarlo después
-        timestamp: comment.fecha_creacion
-      })) || [];
+      // Formatear comentarios con nombre de usuario
+      const formattedComments = (data || []).map(comment => {
+        let authorName = 'Usuario';
+        
+        // Si es el usuario actual, mostrar su nombre
+        if (comment.usuario_id && currentUser?.id === comment.usuario_id) {
+          authorName = currentUser?.nombre || 
+                      currentUser?.name || 
+                      currentUser?.email?.split('@')[0] || 
+                      'Tú';
+        } else if (comment.usuario_id) {
+          // Para otros usuarios, mostrar "Usuario" por ahora
+          // TODO: Implementar tabla de usuarios o cache de nombres
+          authorName = 'Usuario';
+        } else {
+          authorName = 'Usuario Anónimo';
+        }
+        
+        return {
+          id: comment.id,
+          text: comment.mensaje,
+          author: authorName,
+          timestamp: comment.fecha_creacion
+        };
+      });
 
       setComments(formattedComments);
     } catch (error) {
