@@ -317,9 +317,8 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
       
       console.log('Intentando subir archivo:', { fileName, filePath, taskId: task.id });
       
-      // NOTA: Usando 'promos-images' temporalmente. 
-      // Para producción, crea el bucket 'task-files' en Supabase Storage
-      const bucketName = 'promos-images'; // Cambiar a 'task-files' cuando el bucket esté creado
+      // Usando el bucket 'tareas' que acepta cualquier tipo de archivo
+      const bucketName = 'tareas';
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(bucketName)
