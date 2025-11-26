@@ -185,11 +185,12 @@ const TaskList = ({ venueName, tasks, onUpdate, currentUser }) => {
 
                 return (
                   <motion.div
+                    layout
                     key={task.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
                     className={`bg-white rounded-lg p-4 transition-all shadow-sm hover:shadow-lg border-l-4 ${urgencyColor}`}
                     onClick={() => {
                       setSelectedTask(task);
