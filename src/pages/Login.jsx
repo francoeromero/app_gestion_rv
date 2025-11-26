@@ -55,7 +55,8 @@ const Login = () => {
       const usuarioEmails = [
         'parastream01@gmail.com',
         'romerofranco3474@gmail.com',
-        
+        'rossi_yanina@yahoo.com.ar',
+        'zolfanezequiel@gmail.com'
       ];
       
       const allAllowedEmails = [...adminEmails, ...usuarioEmails];
