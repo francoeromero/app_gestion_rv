@@ -55,7 +55,7 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
           usuario_id
         `)
         .eq('tarea_id', task.id)
-        .order('fecha_creacion', { ascending: true });
+        .order('fecha_creacion', { ascending: true });  
 
       if (error) throw error;
 

@@ -122,13 +122,13 @@ const TaskList = ({ venueName, tasks, onUpdate, currentUser }) => {
     }
   };
   
-  // Filtrar tareas por búsqueda
+  // Filtrar tareas por búsqueda 
   const filteredTasks = tasks.filter(task => 
     task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     task.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const sortedTasks = [...filteredTasks].sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+  const sortedTasks = [...filteredTasks].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
     <>
