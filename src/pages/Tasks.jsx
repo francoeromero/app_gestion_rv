@@ -29,11 +29,11 @@ const Tasks = ({ user }) => {
 
       if (error) {
         console.error('Error fetching tasks:', error);
-        // toast({
-        //   title: "Error",
-        //   description: `No se pudieron cargar las tareas: ${error.message}`,
-        //   variant: "destructive",
-        // });
+        toast({
+          title: "Error",
+          description: `No se pudieron cargar las tareas: ${error.message}`,
+          variant: "destructive",
+        });
         return;
       }
 
