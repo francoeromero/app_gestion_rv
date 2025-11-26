@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Send, Paperclip, Link as LinkIcon, Image as ImageIcon, FileText, File, Calendar } from 'lucide-react';
+import { Send, Paperclip, Link as LinkIcon, Image as ImageIcon, FileText, File, Calendar, Download } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
@@ -85,6 +85,8 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
     
     try {
       setLoadingFiles(true);
+      console.log('🔍 Cargando archivos para tarea:', task.id);
+      
       const { data, error } = await supabase
         .from('archivos_tareas')
         .select(`
@@ -97,7 +99,13 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
         .eq('tarea_id', task.id)
         .order('fecha_subida', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error al cargar archivos:', error);
+        throw error;
+      }
+
+      console.log('✅ Archivos cargados:', data?.length || 0, 'archivos');
+      console.log('📁 Detalles de archivos:', data);
 
       const formattedFiles = data?.map(file => ({
         id: file.id,
@@ -122,8 +130,23 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
   };
 
   useEffect(() => {
-    fetchComments();
-    fetchFiles();
+    if (open && task?.id) {
+      // Limpiar estado anterior
+      setComments([]);
+      setFiles([]);
+      setComment('');
+      setFileUrl('');
+      
+      // Cargar datos de la tarea actual
+      fetchComments();
+      fetchFiles();
+    } else if (!open) {
+      // Limpiar cuando se cierra el diálogo
+      setComments([]);
+      setFiles([]);
+      setComment('');
+      setFileUrl('');
+    }
   }, [task?.id, open]);
 
   if (!task) return null;
@@ -218,15 +241,49 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
     }
   };
 
+  const handleDownloadFile = async (file) => {
+    try {
+      if (!file.url) return;
+      
+      // Usar fetch para descargar el archivo y forzar la descarga
+      const response = await fetch(file.url);
+      const blob = await response.blob();
+      
+      // Crear un enlace temporal y hacer clic en él
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name || 'archivo';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpiar
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({ 
+        title: "Descargando", 
+        description: `${file.name} se está descargando...` 
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({ 
+        title: "Error al descargar", 
+        description: `No se pudo descargar el archivo: ${error.message}`,
+        variant: "destructive" 
+      });
+    }
+  };
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Verificar tamaño del archivo (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
+    // Verificar tamaño del archivo (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
       toast({ 
         title: "Archivo demasiado grande", 
-        description: "El archivo debe ser menor a 5MB.", 
+        description: "El archivo debe ser menor a 10MB.", 
         variant: "destructive" 
       });
       return;
@@ -239,87 +296,73 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
       const fileName = `${Date.now()}_${file.name}`;
       const filePath = `tasks/${task.id}/${fileName}`;
       
+      console.log('Intentando subir archivo:', { fileName, filePath, taskId: task.id });
+      
+      // NOTA: Usando 'promos-images' temporalmente. 
+      // Para producción, crea el bucket 'task-files' en Supabase Storage
+      const bucketName = 'promos-images'; // Cambiar a 'task-files' cuando el bucket esté creado
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('task-files') // Asegúrate de crear este bucket en Supabase
-        .upload(filePath, file);
+        .from(bucketName)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
-        // Si el bucket no existe, intentar crear URL temporal y guardar solo metadata
-        console.warn('Storage upload failed, saving as metadata only:', uploadError);
-        
-        // Guardar metadata en la tabla archivos_tareas
-        const { data, error } = await supabase
-          .from('archivos_tareas')
-          .insert([{
-            tarea_id: task.id,
-            nombre_archivo: file.name,
-            url_archivo: `local://${file.name}`, // Indicar que es un archivo local
-            tipo: file.type || 'application/octet-stream'
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Actualizar estado local
-        const newFile = {
-          id: data.id,
-          name: file.name,
-          url: URL.createObjectURL(file), // URL temporal para preview
-          type: file.type,
-          uploadedBy: 'Usuario',
-          timestamp: data.fecha_subida,
-          isLocal: true // Indicar que es archivo local
-        };
-        
-        setFiles(prev => [newFile, ...prev]);
-        toast({ 
-          title: "Archivo guardado", 
-          description: `${file.name} ha sido guardado (sin storage - solo metadata).` 
-        });
-        
-      } else {
-        // 2. Obtener URL pública del archivo
-        const { data: urlData } = supabase.storage
-          .from('task-files')
-          .getPublicUrl(filePath);
-
-        // 3. Guardar metadata en tabla archivos_tareas
-        const { data, error } = await supabase
-          .from('archivos_tareas')
-          .insert([{
-            tarea_id: task.id,
-            nombre_archivo: file.name,
-            url_archivo: urlData.publicUrl,
-            tipo: file.type || 'application/octet-stream'
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Actualizar estado local
-        const newFile = {
-          id: data.id,
-          name: file.name,
-          url: urlData.publicUrl,
-          type: file.type,
-          uploadedBy: 'Usuario',
-          timestamp: data.fecha_subida
-        };
-        
-        setFiles(prev => [newFile, ...prev]);
-        toast({ 
-          title: "Archivo subido", 
-          description: `${file.name} ha sido subido exitosamente.` 
-        });
+        console.error('Error en Storage upload:', uploadError);
+        throw new Error(`No se pudo subir el archivo al storage: ${uploadError.message}`);
       }
+
+      console.log('Archivo subido exitosamente al storage:', uploadData);
+
+      // 2. Obtener URL pública del archivo
+      const { data: urlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(filePath);
+
+      console.log('URL pública obtenida:', urlData.publicUrl);
+
+      // 3. Guardar metadata en tabla archivos_tareas
+      const { data, error } = await supabase
+        .from('archivos_tareas')
+        .insert([{
+          tarea_id: task.id,
+          nombre_archivo: file.name,
+          url_archivo: urlData.publicUrl,
+          tipo: file.type || 'application/octet-stream'
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error al guardar en archivos_tareas:', error);
+        throw error;
+      }
+
+      console.log('Metadata guardada en archivos_tareas:', data);
+
+      // Actualizar estado local
+      const newFile = {
+        id: data.id,
+        name: file.name,
+        url: urlData.publicUrl,
+        type: file.type,
+        uploadedBy: currentUser?.nombre || currentUser?.name || 'Usuario',
+        timestamp: data.fecha_subida
+      };
+      
+      setFiles(prev => [newFile, ...prev]);
+      toast({ 
+        title: "Archivo subido", 
+        description: `${file.name} ha sido subido exitosamente.` 
+      });
       
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('Error completo al subir archivo:', error);
       toast({ 
         title: "Error al subir archivo", 
-        description: `Hubo un problema al subir el archivo: ${error.message}`, 
+        description: error.message || 'Hubo un problema al subir el archivo.', 
         variant: "destructive" 
       });
     } finally {
@@ -427,7 +470,7 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
                 ) : (
                     <div className="space-y-2">
                         {files.map(f => (
-                            <div key={f.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-pink-300 transition-all group">
+                            <div key={f.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-pink-300 transition-all group cursor-pointer" onClick={() => handleDownloadFile(f)}>
                                 <div className="flex items-center gap-3">
                                     <div className="flex-shrink-0">{getFileIcon(f.url || f.name)}</div>
                                     <div className="flex-1 overflow-hidden">
@@ -451,15 +494,28 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
                                         </div>
                                     </div>
                                     {f.url && (
-                                        <a 
-                                            href={f.url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="flex-shrink-0 p-2 text-gray-400 hover:text-pink-600 transition-colors"
-                                            title="Abrir archivo"
-                                        >
-                                            <LinkIcon className="h-4 w-4" />
-                                        </a>
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDownloadFile(f);
+                                                }}
+                                                className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                                                title="Descargar archivo"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                            </button>
+                                            <a 
+                                                href={f.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="p-2 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded transition-colors"
+                                                title="Abrir en nueva pestaña"
+                                            >
+                                                <LinkIcon className="h-4 w-4" />
+                                            </a>
+                                        </div>
                                     )}
                                 </div>
                                 {/* Indicador de archivo temporal/subiendo para Supabase */}

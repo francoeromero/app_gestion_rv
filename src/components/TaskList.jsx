@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, MessageSquare, Paperclip, Edit2, Trash2, Calendar, AlertTriangle, CheckCircle, XCircle, CheckSquare } from 'lucide-react';
+import { Plus, MessageSquare, Paperclip, Edit2, Trash2, Calendar, AlertTriangle, CheckCircle, XCircle, CheckSquare, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import TaskDialog from '@/components/TaskDialog';
@@ -14,6 +15,7 @@ const TaskList = ({ venueName, tasks, onUpdate, currentUser }) => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   const handleSave = async (taskData) => {
@@ -116,38 +118,61 @@ const TaskList = ({ venueName, tasks, onUpdate, currentUser }) => {
     }
   };
   
-  const sortedTasks = [...tasks].sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+  // Filtrar tareas por búsqueda
+  const filteredTasks = tasks.filter(task => 
+    task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    task.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const sortedTasks = [...filteredTasks].sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-4">
           <h3 className="text-xl font-semibold text-gray-800">{venueName}</h3>
-          <Button
-            onClick={() => {
-              setEditingTask(null);
-              setDialogOpen(true);
-            }}
-            className="bg-pink-600 hover:bg-pink-700 text-white font-semibold transition-all shadow-md hover:shadow-lg"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Tarea
-          </Button>
+          <div className="flex items-center gap-3 flex-1 max-w-md">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Buscar tareas..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full"
+              />
+            </div>
+            <Button
+              onClick={() => {
+                setEditingTask(null);
+                setDialogOpen(true);
+              }}
+              className="bg-pink-600 hover:bg-pink-700 text-white font-semibold transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Tarea
+            </Button>
+          </div>
         </div>
 
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
           {sortedTasks.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
               className="text-center py-16 bg-gray-50 rounded-lg"
             >
               <CheckSquare className="mx-auto h-12 w-12 text-gray-400" />
-              <h4 className="mt-4 text-lg font-semibold text-gray-700">¡Todo en orden!</h4>
-              <p className="mt-1 text-gray-500">No hay tareas pendientes en esta sede.</p>
+              <h4 className="mt-4 text-lg font-semibold text-gray-700">
+                {searchQuery ? 'No se encontraron tareas' : '¡Todo en orden!'}
+              </h4>
+              <p className="mt-1 text-gray-500">
+                {searchQuery ? 'Intenta con otra búsqueda' : 'No hay tareas pendientes en esta sede.'}
+              </p>
             </motion.div>
           ) : (
-            <motion.div layout className="space-y-4">
+            <motion.div className="space-y-4">
               {sortedTasks.map((task) => {
                 const daysLeft = differenceInDays(parseISO(task.deadline), new Date());
                 const StatusIcon = getStatusInfo(task.status).icon;
@@ -160,12 +185,11 @@ const TaskList = ({ venueName, tasks, onUpdate, currentUser }) => {
 
                 return (
                   <motion.div
-                    layout
                     key={task.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
                     className={`bg-white rounded-lg p-4 transition-all shadow-sm hover:shadow-lg border-l-4 ${urgencyColor}`}
                     onClick={() => {
                       setSelectedTask(task);

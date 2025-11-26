@@ -39,6 +39,30 @@ const Tasks = ({ user }) => {
 
       console.log('Tasks data received:', data);
 
+      // Obtener conteo de comentarios para cada tarea
+      const { data: commentsData } = await supabase
+        .from('comentarios')
+        .select('tarea_id');
+
+      const commentsCountByTask = {};
+      if (commentsData) {
+        commentsData.forEach(comment => {
+          commentsCountByTask[comment.tarea_id] = (commentsCountByTask[comment.tarea_id] || 0) + 1;
+        });
+      }
+
+      // Obtener conteo de archivos para cada tarea
+      const { data: filesData } = await supabase
+        .from('archivos_tareas')
+        .select('tarea_id');
+
+      const filesCountByTask = {};
+      if (filesData) {
+        filesData.forEach(file => {
+          filesCountByTask[file.tarea_id] = (filesCountByTask[file.tarea_id] || 0) + 1;
+        });
+      }
+
       // Mapear campos de BD a estructura del frontend y agrupar por sede
       const mappedTasks = data.map(task => ({
         id: task.id,
@@ -48,8 +72,8 @@ const Tasks = ({ user }) => {
         status: task.estado,
         venue: task.sede,
         userId: task.usuario_id,
-        comments: [], // TODO: implementar comentarios si es necesario
-        files: [] // TODO: implementar archivos si es necesario
+        comments: Array(commentsCountByTask[task.id] || 0).fill(null), // Array con la cantidad correcta
+        files: Array(filesCountByTask[task.id] || 0).fill(null) // Array con la cantidad correcta
       }));
 
       console.log('Mapped tasks:', mappedTasks);
