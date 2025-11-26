@@ -56,11 +56,11 @@ const Events = ({ user }) => {
       setEvents(mappedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
-      toast({ 
-        title: "Error", 
-        description: "No se pudieron cargar los eventos", 
-        variant: "destructive" 
-      });
+      // toast({ 
+      //   title: "Error", 
+      //   description: "No se pudieron cargar los eventos", 
+      //   variant: "destructive" 
+      // });
     } finally {
       setLoading(false);
     }
@@ -102,11 +102,11 @@ const Events = ({ user }) => {
 
     } catch (error) {
       console.error('Error saving event:', error);
-      toast({ 
-        title: "Error", 
-        description: "No se pudo guardar el evento", 
-        variant: "destructive" 
-      });
+      // toast({ 
+      //   title: "Error", 
+      //   description: "No se pudo guardar el evento", 
+      //   variant: "destructive" 
+      // });
     }
   };
 
@@ -129,11 +129,11 @@ const Events = ({ user }) => {
       toast({ title: 'Evento eliminado', description: 'El evento ha sido eliminado correctamente.' });
     } catch (error) {
       console.error('Error deleting event:', error);
-      toast({ 
-        title: "Error", 
-        description: "No se pudo eliminar el evento", 
-        variant: "destructive" 
-      });
+      // toast({ 
+      //   title: "Error", 
+      //   description: "No se pudo eliminar el evento", 
+      //   variant: "destructive" 
+      // });
     }
   };
 

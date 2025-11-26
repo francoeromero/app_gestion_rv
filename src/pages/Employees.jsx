@@ -41,11 +41,11 @@ const Employees = ({ user }) => {
       setEmployees(mappedEmployees);
     } catch (error) {
       console.error('Error fetching employees:', error);
-      toast({ 
-        title: "Error", 
-        description: "No se pudieron cargar los empleados", 
-        variant: "destructive" 
-      });
+      // toast({ 
+      //   title: "Error", 
+      //   description: "No se pudieron cargar los empleados", 
+      //   variant: "destructive" 
+      // });
     } finally {
       setLoading(false);
     }

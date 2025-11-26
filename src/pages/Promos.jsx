@@ -57,11 +57,11 @@ const Promos = () => {
       setPromos(data || []);
     } catch (error) {
       console.error('Error cargando promos:', error);
-      toast({
-        title: "Error al cargar promociones",
-        description: "No se pudieron cargar las promociones.",
-        variant: "destructive",
-      });
+      // toast({
+      //   title: "Error al cargar promociones",
+      //   description: "No se pudieron cargar las promociones.",
+      //   variant: "destructive",
+      // });
     } finally {
       setIsLoading(false);
     }

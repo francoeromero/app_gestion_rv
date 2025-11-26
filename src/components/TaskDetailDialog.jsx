@@ -88,11 +88,11 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
       setComments(formattedComments);
     } catch (error) {
       console.error('Error loading comments:', error);
-      toast({
-        title: "Error",
-        description: `No se pudieron cargar los comentarios: ${error.message}`,
-        variant: "destructive"
-      });
+      // toast({
+      //   title: "Error",
+      //   description: `No se pudieron cargar los comentarios: ${error.message}`,
+      //   variant: "destructive"
+      // });
     } finally {
       setLoadingComments(false);
     }
@@ -138,11 +138,11 @@ const TaskDetailDialog = ({ open, onOpenChange, task, onUpdate, currentUser }) =
       setFiles(formattedFiles);
     } catch (error) {
       console.error('Error loading files:', error);
-      toast({
-        title: "Error",
-        description: `No se pudieron cargar los archivos: ${error.message}`,
-        variant: "destructive"
-      });
+      // toast({
+      //   title: "Error",
+      //   description: `No se pudieron cargar los archivos: ${error.message}`,
+      //   variant: "destructive"
+      // });
     } finally {
       setLoadingFiles(false);
     }

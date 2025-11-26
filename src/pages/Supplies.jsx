@@ -33,11 +33,11 @@ const Supplies = ({ user }) => {
           details: error.details,
           hint: error.hint
         });
-        toast({
-          title: "Error",
-          description: `No se pudieron cargar los insumos: ${error.message}`,
-          variant: "destructive",
-        });
+        // toast({
+        //   title: "Error",
+        //   description: `No se pudieron cargar los insumos: ${error.message}`,
+        //   variant: "destructive",
+        // });
         return;
       }
 
