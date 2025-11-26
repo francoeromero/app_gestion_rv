@@ -55,14 +55,18 @@ const TaskList = ({ venueName, tasks, onUpdate, currentUser }) => {
         
         console.log('Task saved successfully:', data);
         toast({ title: "Tarea agregada exitosamente" });
+        
+        // Guardar la tarea nueva con su ID real de la base de datos
+        taskData.id = data.id;
       }
 
-      // Actualizar lista local temporalmente
+      // Actualizar lista local
       let updated;
       if (editingTask) {
         updated = tasks.map(t => t.id === editingTask.id ? { ...taskData, comments: t.comments, files: t.files, id: t.id } : t);
       } else {
-        const newTask = { ...taskData, id: 'temp-' + Date.now(), comments: [], files: [] };
+        // Usar el ID real de Supabase, no uno temporal
+        const newTask = { ...taskData, id: taskData.id, comments: [], files: [] };
         updated = [...tasks, newTask];
       }
       

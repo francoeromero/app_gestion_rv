@@ -56,11 +56,11 @@ const Events = ({ user }) => {
       setEvents(mappedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
-      // toast({ 
-      //   title: "Error", 
-      //   description: "No se pudieron cargar los eventos", 
-      //   variant: "destructive" 
-      // });
+      toast({ 
+        title: "Error", 
+        description: "No se pudieron cargar los eventos", 
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
     }
