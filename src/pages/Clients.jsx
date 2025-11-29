@@ -35,7 +35,17 @@ const Clients = ({ user }) => {
     return acc;
   }, {});
 
-  const filteredGroups = Object.values(groupedClients).filter(group => {
+  const filteredGroups = Object.values(groupedClients).map(group => {
+    // Ordenar mensajes internos por fecha descendente (más reciente arriba)
+    group.mensajes.sort((a, b) => {
+      const dateA = a.fecha || '';
+      const dateB = b.fecha || '';
+      if (dateA < dateB) return 1;
+      if (dateA > dateB) return -1;
+      return 0;
+    });
+    return group;
+  }).filter(group => {
     const searchLower = searchTerm.toLowerCase();
     const phoneMatch = group.telefono.toLowerCase().includes(searchLower);
     const messageMatch = group.mensajes.some(m => 
