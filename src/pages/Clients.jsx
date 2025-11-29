@@ -35,42 +35,50 @@ const Clients = ({ user }) => {
     return acc;
   }, {});
 
-  const filteredGroups = Object.values(groupedClients).map(group => {
-    // Ordenar mensajes internos por fecha descendente (más reciente arriba)
-    group.mensajes.sort((a, b) => {
-      const dateA = a.fecha || '';
-      const dateB = b.fecha || '';
-      if (dateA < dateB) return 1;
-      if (dateA > dateB) return -1;
-      return 0;
-    });
-    return group;
-  }).filter(group => {
-    const searchLower = searchTerm.toLowerCase();
-    const phoneMatch = group.telefono.toLowerCase().includes(searchLower);
-    const messageMatch = group.mensajes.some(m => 
-      m.texto && m.texto.toLowerCase().includes(searchLower)
-    );
+  // Helper para parsear fechas de forma segura y flexible
+  const parseDate = (dateStr) => {
+    if (!dateStr) return 0;
+    const str = dateStr.toString().trim();
     
-    return phoneMatch || messageMatch;
-  }).sort((a, b) => {
-    // Encontrar la fecha más reciente en todos los mensajes del grupo A
-    const maxDateA = a.mensajes.reduce((max, msg) => {
-      const currentDate = msg.fecha || '';
-      return currentDate > max ? currentDate : max;
-    }, '');
+    // Intento 1: Parseo directo (funciona para la mayoría de formatos ISO y locales en Chrome/V8)
+    let timestamp = new Date(str).getTime();
+    if (!isNaN(timestamp)) return timestamp;
 
-    // Encontrar la fecha más reciente en todos los mensajes del grupo B
-    const maxDateB = b.mensajes.reduce((max, msg) => {
-      const currentDate = msg.fecha || '';
-      return currentDate > max ? currentDate : max;
-    }, '');
-    
-    // Orden descendente (más reciente primero)
-    if (maxDateA < maxDateB) return 1;
-    if (maxDateA > maxDateB) return -1;
+    // Intento 2: Reemplazar primer espacio por T (para compatibilidad estricta ISO-8601 en Safari/Firefox)
+    // Convierte "2025-11-29 10:00:00" -> "2025-11-29T10:00:00"
+    const isoStr = str.replace(' ', 'T');
+    timestamp = new Date(isoStr).getTime();
+    if (!isNaN(timestamp)) return timestamp;
+
     return 0;
-  });
+  };
+
+  // Obtener el timestamp más reciente de un grupo de mensajes
+  const getGroupLatestTimestamp = (group) => {
+    if (!group.mensajes || group.mensajes.length === 0) return 0;
+    return Math.max(...group.mensajes.map(m => parseDate(m.fecha)));
+  };
+
+  const filteredGroups = Object.values(groupedClients)
+    .map(group => {
+      // 1. Ordenar los mensajes DENTRO de cada card (más reciente arriba)
+      group.mensajes.sort((a, b) => parseDate(b.fecha) - parseDate(a.fecha));
+      return group;
+    })
+    .filter(group => {
+      const searchLower = searchTerm.toLowerCase();
+      const phoneMatch = group.telefono.toLowerCase().includes(searchLower);
+      const messageMatch = group.mensajes.some(m => 
+        m.texto && m.texto.toLowerCase().includes(searchLower)
+      );
+      return phoneMatch || messageMatch;
+    })
+    .sort((a, b) => {
+      // 2. Ordenar las CARDS entre sí usando la misma lógica unificada
+      const timeA = getGroupLatestTimestamp(a);
+      const timeB = getGroupLatestTimestamp(b);
+      return timeB - timeA;
+    });
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -135,21 +143,16 @@ const Clients = ({ user }) => {
           </div>
         ) : (
           filteredGroups.map((group, index) => {
-            // Lógica para determinar si es reciente (últimos 2 días)
-            const maxDateStr = group.mensajes.reduce((max, msg) => {
-              const currentDate = msg.fecha || '';
-              return currentDate > max ? currentDate : max;
-            }, '');
+            // Usar la misma lógica de timestamp unificada para determinar si es reciente
+            const latestTimestamp = getGroupLatestTimestamp(group);
             
             const isRecent = (() => {
-              if (!maxDateStr) return false;
-              // Intentar parsear la fecha. Asumiendo formato YYYY-MM-DD HH:mm:ss o similar
-              const msgDate = new Date(maxDateStr);
-              if (isNaN(msgDate.getTime())) return false; // Fecha inválida
+              if (!latestTimestamp) return false;
               
+              const msgDate = new Date(latestTimestamp);
               const twoDaysAgo = new Date();
-              twoDaysAgo.setDate(twoDaysAgo.getDate() - 1);
-              // Resetear horas para comparar solo fechas si se prefiere, pero con timestamp completo está bien
+              twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+              
               return msgDate >= twoDaysAgo;
             })();
 
