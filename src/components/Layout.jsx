@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
   Users, 
+  User,
   Package, 
   Truck, 
   BarChart3, 
@@ -24,6 +25,7 @@ const Layout = ({ children, user, onLogout }) => {
 
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/clientes', icon: User, label: 'Clientes' },
     { path: '/eventos', icon: CalendarDays, label: 'Eventos' },
     { path: '/empleados', icon: Users, label: 'Empleados' },
     { path: '/insumos', icon: Package, label: 'Insumos' },

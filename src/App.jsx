@@ -15,6 +15,7 @@ import Reports from '@/pages/Reports';
 import Tasks from '@/pages/Tasks';
 import Settings from '@/pages/Settings';
 import Events from '@/pages/Events';
+import Clients from '@/pages/Clients';
 import Layout from '@/components/Layout';
 import { Loader2 } from 'lucide-react';
 
@@ -137,6 +138,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard user={currentUser} />} />
+        <Route path="/clientes" element={<Clients user={currentUser} />} />
         <Route path="/empleados" element={<Employees user={currentUser} />} />
         <Route path="/insumos" element={<Supplies user={currentUser} />} />
         <Route path="/proveedores" element={<Suppliers user={currentUser} />} />
