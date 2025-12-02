@@ -45,7 +45,8 @@ const Events = ({ user }) => {
       const mappedEvents = data.map(event => ({
         id: event.id,
         name: event.nombre,
-        date: new Date(event.fecha),
+        // Parsear fecha asegurando que sea mediodía local para evitar desfases de zona horaria
+        date: new Date(event.fecha + 'T12:00:00'),
         type: event.tipo,
         price: event.precio,
         description: event.descripcion,
@@ -72,7 +73,8 @@ const Events = ({ user }) => {
       const dbData = {
         nombre: eventData.name,
         tipo: eventData.type,
-        fecha: eventData.date.toISOString().split('T')[0], // Formato YYYY-MM-DD
+        // Usar format de date-fns para obtener la fecha local YYYY-MM-DD
+        fecha: format(eventData.date, 'yyyy-MM-dd'),
         precio: eventData.price,
         descripcion: eventData.description || '',
         creado_por: user?.id || user?.email

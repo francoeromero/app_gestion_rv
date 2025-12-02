@@ -434,7 +434,7 @@ const Dashboard = ({ user }) => {
       color: 'bg-green-500'
     },
     { 
-      title: 'Evento Próximo', 
+      title: 'Evento mo', 
       value: nextEvent.name, 
       subtitle: nextEvent.date,
       icon: Calendar,

@@ -23,7 +23,35 @@ const EventDialog = ({ open, onOpenChange, onSave, event }) => {
   useEffect(() => {
     if (event) {
       setName(event.name);
-      setDate(event.date);
+      
+      // Asegurar que la fecha se interprete correctamente
+      let parsedDate = null;
+      if (event.date) {
+        if (event.date instanceof Date) {
+          parsedDate = event.date;
+        } else if (typeof event.date === 'string') {
+          // Solución robusta para problemas de zona horaria
+          // Si el formato es YYYY-MM-DD, construimos la fecha localmente componente por componente
+          if (/^\d{4}-\d{2}-\d{2}$/.test(event.date)) {
+            const [year, month, day] = event.date.split('-').map(Number);
+            // Crear fecha a las 12:00 del mediodía para evitar problemas de cambio de día por pocas horas
+            parsedDate = new Date(year, month - 1, day, 12, 0, 0);
+          } else {
+            // Para otros formatos (ISO completo), parseamos normal
+            parsedDate = new Date(event.date);
+            
+            // Si es una fecha UTC a medianoche (común en bases de datos), ajustamos para que se vea el mismo día
+            // Verificamos si al pasar a local cambia el día respecto al string original
+            const dayInString = parseInt(event.date.substring(8, 10));
+            if (!isNaN(dayInString) && parsedDate.getDate() !== dayInString) {
+               // Si hay discrepancia de día, asumimos problema de timezone y sumamos el offset
+               parsedDate = new Date(parsedDate.getTime() + parsedDate.getTimezoneOffset() * 60000);
+            }
+          }
+        }
+      }
+      setDate(parsedDate);
+      
       setType(event.type);
       setPrice(event.price);
       setDescription(event.description || '');
