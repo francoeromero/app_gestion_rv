@@ -51,7 +51,7 @@ const Login = () => {
 
     try {
       // Lista de emails permitidos
-      const adminEmails = ['francoeromero.m@gmail.com','eventosrossevita@gmail.com', 'eventosrossevita@gmail.com', 'ventasgrupozuri@gmail.com', 'infogrupoz.eventos@gmail.com'];
+      const adminEmails = ['francoeromero.m@gmail.com','infogrupoz.eventos@gmail.com', 'eventosrossevita@gmail.com', 'ventasgrupozuri@gmail.com', 'infogrupoz.eventos@gmail.com'];
       const usuarioEmails = [
         'parastream01@.com',
         'romerofranco3474@gmail.com',
