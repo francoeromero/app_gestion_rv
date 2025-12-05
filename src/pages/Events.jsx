@@ -339,7 +339,7 @@ const Events = ({ user }) => {
                                   value={tempEventData.type} 
                                   onValueChange={(val) => setTempEventData({...tempEventData, type: val})}
                                 >
-                                  <SelectTrigger className="h-8 w-[130px]">
+                                  <SelectTrigger className="h-8 w-[110px]">
                                     <SelectValue placeholder="Tipo" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -360,7 +360,7 @@ const Events = ({ user }) => {
                                     }
                                   }}
                                   onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
-                                  className="h-8 w-[140px]"
+                                  className="h-8 w-[125px]"
                                 />
                               </TableCell>
                               <TableCell>
@@ -369,16 +369,8 @@ const Events = ({ user }) => {
                                   value={tempEventData.price} 
                                   onChange={(e) => setTempEventData({...tempEventData, price: e.target.value})} 
                                   onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
-                                  className="h-8 w-24"
+                                  className="h-8 w-20"
                                 />
-                                <div className="flex gap-1 mt-1">
-                                  <Button variant="ghost" size="icon" onClick={handleSaveInline} className="text-green-600 hover:text-green-700 h-6 w-6">
-                                    <Check className="h-3 w-3" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" onClick={handleCancel} className="text-red-500 hover:text-red-600 h-6 w-6">
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
                               </TableCell>
                             </TableRow>
                           ) : (
