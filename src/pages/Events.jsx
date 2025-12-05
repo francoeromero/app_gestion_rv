@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, CalendarDays, List, Tag, DollarSign } from 'lucide-react';
+import { Plus, Edit2, Trash2, CalendarDays, List, Tag, DollarSign, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabaseClient';
@@ -10,7 +10,8 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { es } from 'date-fns/locale';
 import { format } from 'date-fns';
-import EventDialog from '@/components/EventDialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -21,16 +22,29 @@ import {
 } from "@/components/ui/table";
 
 
+const eventTypes = ["Casamiento", "Cumpleaños", "Corporativo", "Aniversario", "Otro"];
+
 const Events = ({ user }) => {
   const [events, setEvents] = useState([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [tempEventData, setTempEventData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === 'Escape' && (editingId === 'new' || editingId !== null)) {
+        handleCancel();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [editingId]);
 
   const fetchEvents = async () => {
     try {
@@ -67,54 +81,66 @@ const Events = ({ user }) => {
     }
   };
 
-  const handleSaveEvent = async (eventData) => {
+  const handleSaveInline = async () => {
+    if (!tempEventData.name || !tempEventData.price) {
+        toast({ title: "Error", description: "Nombre y precio son requeridos", variant: "destructive" });
+        return;
+    }
+
     try {
-      // Mapear campos del frontend a la BD
       const dbData = {
-        nombre: eventData.name,
-        tipo: eventData.type,
-        // Usar format de date-fns para obtener la fecha local YYYY-MM-DD
-        fecha: format(eventData.date, 'yyyy-MM-dd'),
-        precio: eventData.price,
-        descripcion: eventData.description || '',
+        nombre: tempEventData.name,
+        tipo: tempEventData.type,
+        fecha: format(tempEventData.date, 'yyyy-MM-dd'),
+        precio: parseFloat(tempEventData.price),
+        descripcion: tempEventData.description || '',
         creado_por: user?.id || user?.email
       };
 
-      if (editingEvent) {
-        const { error } = await supabase
-          .from('eventos')
-          .update(dbData)
-          .eq('id', editingEvent.id);
-
-        if (error) throw error;
-        toast({ title: 'Evento actualizado', description: `El evento "${eventData.name}" ha sido actualizado.` });
+      if (editingId === 'new') {
+         const { error } = await supabase.from('eventos').insert([dbData]);
+         if (error) throw error;
+         toast({ title: 'Evento creado', description: `El evento "${tempEventData.name}" ha sido agendado.` });
       } else {
-        const { error } = await supabase
-          .from('eventos')
-          .insert([dbData]);
-
-        if (error) throw error;
-        toast({ title: 'Evento creado', description: `El evento "${eventData.name}" ha sido agendado.` });
+         const { error } = await supabase.from('eventos').update(dbData).eq('id', editingId);
+         if (error) throw error;
+         toast({ title: 'Evento actualizado', description: `El evento "${tempEventData.name}" ha sido actualizado.` });
       }
 
-      // Recargar eventos desde la BD
       await fetchEvents();
-      setDialogOpen(false);
-      setEditingEvent(null);
-
+      setEditingId(null);
+      setTempEventData(null);
     } catch (error) {
       console.error('Error saving event:', error);
-      // toast({ 
-      //   title: "Error", 
-      //   description: "No se pudo guardar el evento", 
-      //   variant: "destructive" 
-      // });
+      toast({ title: "Error", description: "No se pudo guardar el evento", variant: "destructive" });
     }
   };
 
-  const handleEdit = (event) => {
-    setEditingEvent(event);
-    setDialogOpen(true);
+  const handleCancel = () => {
+    setEditingId(null);
+    setTempEventData(null);
+  };
+
+  const handleDayClick = (day) => {
+      setEditingId('new');
+      setTempEventData({
+          name: '',
+          type: eventTypes[0],
+          date: day,
+          price: '3000000',
+          description: ''
+      });
+  };
+
+  const handleEditClick = (event) => {
+      setEditingId(event.id);
+      setTempEventData({
+          name: event.name,
+          type: event.type,
+          date: event.date,
+          price: event.price,
+          description: event.description
+      });
   };
 
   const handleDelete = async (id) => {
@@ -140,6 +166,7 @@ const Events = ({ user }) => {
   };
 
   const bookedDays = events.map(e => e.date);
+  const pendingDay = editingId === 'new' && tempEventData ? [tempEventData.date] : [];
 
   return (
     <>
@@ -147,13 +174,6 @@ const Events = ({ user }) => {
         <title>Eventos - Rosse Vita Eventos</title>
         <meta name="description" content="Gestiona y visualiza los eventos agendados." />
       </Helmet>
-
-      <EventDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSave={handleSaveEvent}
-        event={editingEvent}
-      />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -166,10 +186,6 @@ const Events = ({ user }) => {
             <h2 className="text-3xl font-bold text-gray-800">Agenda de Eventos</h2>
             <p className="text-gray-600 mt-1">Organiza, visualiza y gestiona todos tus eventos.</p>
           </div>
-          <Button onClick={() => { setEditingEvent(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Agendar Evento
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -187,10 +203,15 @@ const Events = ({ user }) => {
                 mode="multiple"
                 min={1}
                 selected={bookedDays}
+                onDayClick={handleDayClick}
                 locale={es}
                 showOutsideDays
                 fixedWeeks
                 className="flex justify-center"
+                modifiers={{ pending: pendingDay }}
+                modifiersClassNames={{
+                  pending: "bg-gray-300 text-gray-700 hover:bg-gray-400"
+                }}
                 classNames={{
                   day_selected: "bg-pink-600 text-white hover:bg-pink-700 focus:bg-pink-700",
                   day_today: "font-bold text-pink-600"
@@ -220,31 +241,156 @@ const Events = ({ user }) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {editingId === 'new' && (
+                      <TableRow className="bg-pink-50">
+                        <TableCell>
+                          <Input 
+                            value={tempEventData.name} 
+                            onChange={(e) => setTempEventData({...tempEventData, name: e.target.value})} 
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
+                            placeholder="Nombre"
+                            className="h-8"
+                          />
+                          <Input 
+                            value={tempEventData.description} 
+                            onChange={(e) => setTempEventData({...tempEventData, description: e.target.value})} 
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
+                            placeholder="Descripción"
+                            className="h-8 mt-1 text-xs"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Select 
+                            value={tempEventData.type} 
+                            onValueChange={(val) => setTempEventData({...tempEventData, type: val})}
+                          >
+                            <SelectTrigger className="h-8 w-[130px]">
+                              <SelectValue placeholder="Tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {eventTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          {format(tempEventData.date, 'dd/MM/yyyy')}
+                        </TableCell>
+                        <TableCell>
+                          <Input 
+                            type="number"
+                            value={tempEventData.price} 
+                            onChange={(e) => setTempEventData({...tempEventData, price: e.target.value})} 
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
+                            placeholder="Precio"
+                            className="h-8 w-24"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={handleSaveInline} className="text-green-600 hover:text-green-700">
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={handleCancel} className="text-red-500 hover:text-red-600">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {events.length > 0 ? (
                       events
                         .sort((a,b) => a.date - b.date)
                         .map(event => (
-                          <TableRow key={event.id}>
-                            <TableCell className="font-medium">{event.name}</TableCell>
-                            <TableCell>{event.type}</TableCell>
-                            <TableCell>{format(event.date, 'dd/MM/yyyy')}</TableCell>
-                            <TableCell>${event.price.toLocaleString('es-AR')}</TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" onClick={() => handleEdit(event)}>
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(event.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
+                          editingId === event.id ? (
+                            <TableRow key={event.id} className="bg-blue-50">
+                              <TableCell>
+                                <Input 
+                                  value={tempEventData.name} 
+                                  onChange={(e) => setTempEventData({...tempEventData, name: e.target.value})} 
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
+                                  className="h-8"
+                                />
+                                <Input 
+                                  value={tempEventData.description} 
+                                  onChange={(e) => setTempEventData({...tempEventData, description: e.target.value})} 
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
+                                  placeholder="Descripción"
+                                  className="h-8 mt-1 text-xs"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Select 
+                                  value={tempEventData.type} 
+                                  onValueChange={(val) => setTempEventData({...tempEventData, type: val})}
+                                >
+                                  <SelectTrigger className="h-8 w-[130px]">
+                                    <SelectValue placeholder="Tipo" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {eventTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                <Input 
+                                  type="date"
+                                  value={tempEventData.date ? format(tempEventData.date, 'yyyy-MM-dd') : ''}
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      const newDate = new Date(e.target.value + 'T12:00:00');
+                                      if (!isNaN(newDate.getTime())) {
+                                        setTempEventData({...tempEventData, date: newDate});
+                                      }
+                                    }
+                                  }}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
+                                  className="h-8 w-[140px]"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input 
+                                  type="number"
+                                  value={tempEventData.price} 
+                                  onChange={(e) => setTempEventData({...tempEventData, price: e.target.value})} 
+                                  onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
+                                  className="h-8 w-24"
+                                />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="ghost" size="icon" onClick={handleSaveInline} className="text-green-600 hover:text-green-700">
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={handleCancel} className="text-red-500 hover:text-red-600">
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            <TableRow key={event.id}>
+                              <TableCell className="font-medium">
+                                {event.name}
+                                {event.description && <div className="text-xs text-gray-500 mt-1">{event.description}</div>}
+                              </TableCell>
+                              <TableCell>{event.type}</TableCell>
+                              <TableCell>{format(event.date, 'dd/MM/yyyy')}</TableCell>
+                              <TableCell>${event.price.toLocaleString('es-AR')}</TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="ghost" size="icon" onClick={() => handleEditClick(event)}>
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(event.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          )
                         ))
                     ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
-                          No hay eventos agendados.
-                        </TableCell>
-                      </TableRow>
+                      !editingId && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="h-24 text-center">
+                            No hay eventos agendados.
+                          </TableCell>
+                        </TableRow>
+                      )
                     )}
                   </TableBody>
                 </Table>
