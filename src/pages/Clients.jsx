@@ -150,10 +150,9 @@ const Clients = ({ user }) => {
               if (!latestTimestamp) return false;
               
               const msgDate = new Date(latestTimestamp);
-              const twoDaysAgo = new Date();
-              twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+              const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
               
-              return msgDate >= twoDaysAgo;
+              return msgDate >= fifteenMinutesAgo;
             })();
 
             return (
