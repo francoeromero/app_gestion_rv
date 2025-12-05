@@ -190,7 +190,7 @@ const Events = ({ user }) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <motion.div 
-            className="lg:col-span-1 bg-white p-4 rounded-2xl shadow-lg border"
+            className="lg:col-span-1 bg-white p-4 rounded-2xl shadow-lg border h-[400px] flex flex-col"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -220,7 +220,7 @@ const Events = ({ user }) => {
           </motion.div>
 
           <motion.div 
-            className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg border"
+            className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg border h-[400px] flex flex-col"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.3 }}
@@ -229,7 +229,7 @@ const Events = ({ user }) => {
                 <List className="h-5 w-5 text-pink-600" />
                 Próximos Eventos
             </h3>
-             <div className="overflow-x-auto">
+             <div className="overflow-auto flex-1">
                 <Table>
                   <TableHeader>
                     <TableRow>
