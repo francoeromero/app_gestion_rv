@@ -42,8 +42,25 @@ const Events = ({ user }) => {
       }
     };
 
+    const handleClickOutside = (e) => {
+      if (editingId !== null) {
+        // Verificar si el clic fue dentro de la fila de edición
+        const editingRow = e.target.closest('tr');
+        const isEditingRow = editingRow?.classList.contains('bg-pink-50') || editingRow?.classList.contains('bg-blue-50');
+        
+        if (!isEditingRow) {
+          handleCancel();
+        }
+      }
+    };
+
     document.addEventListener('keydown', handleEscapeKey);
-    return () => document.removeEventListener('keydown', handleEscapeKey);
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [editingId]);
 
   const fetchEvents = async () => {
@@ -232,14 +249,15 @@ const Events = ({ user }) => {
              <div className="overflow-auto flex-1">
                 <Table>
                   <TableHeader>
+
                     <TableRow>
                       <TableHead>Nombre</TableHead>
                       <TableHead><Tag className="inline h-4 w-4 mr-1" />Tipo</TableHead>
                       <TableHead><CalendarDays className="inline h-4 w-4 mr-1" />Fecha</TableHead>
                       <TableHead><DollarSign className="inline h-4 w-4 mr-1" />Precio</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
+
                   <TableBody>
                     {editingId === 'new' && (
                       <TableRow className="bg-pink-50">
@@ -284,14 +302,14 @@ const Events = ({ user }) => {
                             placeholder="Precio"
                             className="h-8 w-24"
                           />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" onClick={handleSaveInline} className="text-green-600 hover:text-green-700">
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={handleCancel} className="text-red-500 hover:text-red-600">
-                            <X className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1 mt-1">
+                            <Button variant="ghost" size="icon" onClick={handleSaveInline} className="text-green-600 hover:text-green-700 h-6 w-6">
+                              <Check className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={handleCancel} className="text-red-500 hover:text-red-600 h-6 w-6">
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )}
@@ -353,14 +371,14 @@ const Events = ({ user }) => {
                                   onKeyDown={(e) => e.key === 'Enter' && handleSaveInline()}
                                   className="h-8 w-24"
                                 />
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" onClick={handleSaveInline} className="text-green-600 hover:text-green-700">
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={handleCancel} className="text-red-500 hover:text-red-600">
-                                  <X className="h-4 w-4" />
-                                </Button>
+                                <div className="flex gap-1 mt-1">
+                                  <Button variant="ghost" size="icon" onClick={handleSaveInline} className="text-green-600 hover:text-green-700 h-6 w-6">
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" onClick={handleCancel} className="text-red-500 hover:text-red-600 h-6 w-6">
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ) : (
@@ -371,14 +389,18 @@ const Events = ({ user }) => {
                               </TableCell>
                               <TableCell>{event.type}</TableCell>
                               <TableCell>{format(event.date, 'dd/MM/yyyy')}</TableCell>
-                              <TableCell>${event.price.toLocaleString('es-AR')}</TableCell>
-                              <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" onClick={() => handleEditClick(event)}>
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(event.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                              <TableCell>
+                                <div className="flex items-center justify-between">
+                                  <span>${event.price.toLocaleString('es-AR')}</span>
+                                  <div className="flex gap-1 ml-2">
+                                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(event)} className="h-6 w-6">
+                                      <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 h-6 w-6" onClick={() => handleDelete(event.id)}>
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
                               </TableCell>
                             </TableRow>
                           )
@@ -386,7 +408,7 @@ const Events = ({ user }) => {
                     ) : (
                       !editingId && (
                         <TableRow>
-                          <TableCell colSpan={5} className="h-24 text-center">
+                          <TableCell colSpan={4} className="h-24 text-center">
                             No hay eventos agendados.
                           </TableCell>
                         </TableRow>

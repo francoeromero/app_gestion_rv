@@ -213,7 +213,7 @@ const Clients = ({ user }) => {
                   <button 
                     onClick={() => handleToggleCheck(group.telefono)}
                     className="text-gray-600 hover:text-green-600 transition-colors flex items-center gap-1"
-                    title={checkedCards[group.telefono] ? "Marcar como no completado" : "Marcar como completado"}
+                    title={checkedCards[group.telefono] ? "Marcar como pendiente" : "Marcar como en espera del cliente"}
                   >
                     {checkedCards[group.telefono] ? (
                       <CheckSquare className="h-5 w-5 text-green-600" />
@@ -221,7 +221,7 @@ const Clients = ({ user }) => {
                       <Square className="h-5 w-5" />
                     )}
                     <span className="text-[10px] text-gray-600">
-                      {checkedCards[group.telefono] ? "Completado" : "A espera del cliente"}
+                      {checkedCards[group.telefono] ? "A la espera del cliente" : "Pendiente"}
                     </span>
                   </button>
                 </div>
