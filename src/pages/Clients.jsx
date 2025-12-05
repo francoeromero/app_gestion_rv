@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, RefreshCw, ExternalLink, MessageSquare, Phone, Calendar } from 'lucide-react';
+import { Search, RefreshCw, ExternalLink, MessageSquare, Phone, Calendar, CheckSquare, Square, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGoogleSheet } from '@/hooks/useGoogleSheet';
 
@@ -9,6 +9,8 @@ const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1EW6bxqVGnJ
 
 const Clients = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [checkedCards, setCheckedCards] = useState({});
+  const [deletedCards, setDeletedCards] = useState(new Set());
   const { data: clients, loading, error, refetch } = useGoogleSheet(GOOGLE_SHEET_CSV_URL);
 
   // Agrupar mensajes por teléfono
@@ -59,6 +61,17 @@ const Clients = ({ user }) => {
     return Math.max(...group.mensajes.map(m => parseDate(m.fecha)));
   };
 
+  const handleToggleCheck = (phone) => {
+    setCheckedCards(prev => ({
+      ...prev,
+      [phone]: !prev[phone]
+    }));
+  };
+
+  const handleDeleteCard = (phone) => {
+    setDeletedCards(prev => new Set([...prev, phone]));
+  };
+
   const filteredGroups = Object.values(groupedClients)
     .map(group => {
       // 1. Ordenar los mensajes DENTRO de cada card (más reciente arriba)
@@ -66,6 +79,9 @@ const Clients = ({ user }) => {
       return group;
     })
     .filter(group => {
+      // Filtrar las cards eliminadas
+      if (deletedCards.has(group.telefono)) return false;
+      
       const searchLower = searchTerm.toLowerCase();
       const phoneMatch = group.telefono.toLowerCase().includes(searchLower);
       const messageMatch = group.mensajes.some(m => 
@@ -180,8 +196,34 @@ const Clients = ({ user }) => {
                     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/2044px-WhatsApp.svg.png" alt="WhatsApp" className="h-4 w-4" />
                   </a>
                 </div>
-                <div className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full border border-gray-100 mt-1">
-                  {group.mensajes.length} mensajes
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full border border-gray-100 flex items-center gap-1">
+                      <MessageSquare className="h-3 w-3" />
+                      {group.mensajes.length}
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteCard(group.telefono)}
+                      className="text-gray-600 hover:text-red-600 transition-colors"
+                      title="Eliminar card"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <button 
+                    onClick={() => handleToggleCheck(group.telefono)}
+                    className="text-gray-600 hover:text-green-600 transition-colors flex items-center gap-1"
+                    title={checkedCards[group.telefono] ? "Marcar como no completado" : "Marcar como completado"}
+                  >
+                    {checkedCards[group.telefono] ? (
+                      <CheckSquare className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <Square className="h-5 w-5" />
+                    )}
+                    <span className="text-[10px] text-gray-600">
+                      {checkedCards[group.telefono] ? "Completado" : "A espera del cliente"}
+                    </span>
+                  </button>
                 </div>
               </div>
               
