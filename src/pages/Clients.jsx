@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Search, RefreshCw, ExternalLink, MessageSquare, Phone, Calendar, CheckSquare, Square, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGoogleSheet } from '@/hooks/useGoogleSheet';
+import { supabase } from '@/lib/supabaseClient';
+import { useToast } from '@/components/ui/use-toast';
 
 const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1EW6bxqVGnJVMrNSkzhKBI3vjEHCNoUOU0GW8uVVEmYA/export?format=csv&gid=153235482';
 
 const Clients = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [checkedCards, setCheckedCards] = useState({});
-  const [deletedCards, setDeletedCards] = useState(new Set());
+  const [clientesSupabase, setClientesSupabase] = useState({});
   const { data: clients, loading, error, refetch } = useGoogleSheet(GOOGLE_SHEET_CSV_URL);
+  const { toast } = useToast();
 
   // Agrupar mensajes por teléfono
   const groupedClients = clients.reduce((acc, client) => {
@@ -61,15 +63,171 @@ const Clients = ({ user }) => {
     return Math.max(...group.mensajes.map(m => parseDate(m.fecha)));
   };
 
-  const handleToggleCheck = (phone) => {
-    setCheckedCards(prev => ({
-      ...prev,
-      [phone]: !prev[phone]
-    }));
+  // Cargar datos de Supabase al montar el componente
+  useEffect(() => {
+    fetchClientesSupabase();
+  }, []);
+
+  // Sincronizar clientes de Google Sheets con Supabase
+  useEffect(() => {
+    if (clients.length > 0) {
+      sincronizarClientesConSupabase();
+    }
+  }, [clients]);
+
+  const fetchClientesSupabase = async () => {
+    try {
+      // Obtener TODOS los clientes (incluyendo eliminados) para poder filtrarlos en el frontend
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*');
+
+      if (error) throw error;
+
+      // Convertir array a objeto indexado por teléfono
+      const clientesMap = {};
+      data.forEach(cliente => {
+        clientesMap[cliente.telefono] = cliente;
+      });
+      setClientesSupabase(clientesMap);
+    } catch (error) {
+      console.error('Error al cargar clientes:', error);
+    }
   };
 
-  const handleDeleteCard = (phone) => {
-    setDeletedCards(prev => new Set([...prev, phone]));
+  const sincronizarClientesConSupabase = async () => {
+    try {
+      // Obtener todos los teléfonos únicos de Google Sheets
+      const telefonosGoogleSheets = [...new Set(clients.map(c => c.telefono).filter(Boolean))];
+      
+      // Obtener los teléfonos que ya existen en Supabase
+      const { data: clientesExistentes, error: errorConsulta } = await supabase
+        .from('clientes')
+        .select('telefono')
+        .in('telefono', telefonosGoogleSheets);
+
+      if (errorConsulta) throw errorConsulta;
+
+      const telefonosExistentes = new Set(clientesExistentes.map(c => c.telefono));
+      
+      // Filtrar teléfonos nuevos que no existen en Supabase
+      const telefonosNuevos = telefonosGoogleSheets.filter(tel => !telefonosExistentes.has(tel));
+
+      if (telefonosNuevos.length > 0) {
+        // Insertar nuevos clientes con estado por defecto "Pendiente"
+        const nuevosClientes = telefonosNuevos.map(telefono => ({
+          telefono,
+          estado: 'Pendiente',
+          eliminado: false
+        }));
+
+        const { error: errorInsercion } = await supabase
+          .from('clientes')
+          .insert(nuevosClientes);
+
+        if (errorInsercion) throw errorInsercion;
+
+        console.log(`${telefonosNuevos.length} nuevos clientes sincronizados con Supabase`);
+        
+        // Recargar los datos de Supabase
+        await fetchClientesSupabase();
+      }
+    } catch (error) {
+      console.error('Error al sincronizar clientes:', error);
+    }
+  };
+
+  const handleToggleCheck = async (phone) => {
+    const clienteActual = clientesSupabase[phone];
+    const nuevoEstado = clienteActual?.estado === 'A la espera del cliente' 
+      ? 'Pendiente' 
+      : 'A la espera del cliente';
+
+    try {
+      if (clienteActual) {
+        // Actualizar cliente existente
+        const { error } = await supabase
+          .from('clientes')
+          .update({ estado: nuevoEstado })
+          .eq('telefono', phone);
+
+        if (error) throw error;
+      } else {
+        // Crear nuevo cliente
+        const { error } = await supabase
+          .from('clientes')
+          .insert([{ telefono: phone, estado: nuevoEstado }]);
+
+        if (error) throw error;
+      }
+
+      // Actualizar estado local
+      await fetchClientesSupabase();
+      
+      toast({
+        title: 'Estado actualizado',
+        description: `Cliente marcado como: ${nuevoEstado}`,
+      });
+    } catch (error) {
+      console.error('Error al actualizar estado:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el estado del cliente',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteCard = async (phone) => {
+    try {
+      // Primero verificar si existe en la base de datos
+      const { data: clienteExistente, error: errorConsulta } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('telefono', phone)
+        .single();
+
+      if (errorConsulta && errorConsulta.code !== 'PGRST116') {
+        // PGRST116 es "no se encontró el registro", cualquier otro error es problema
+        throw errorConsulta;
+      }
+
+      if (clienteExistente) {
+        // Si existe, actualizar a eliminado
+        const { error } = await supabase
+          .from('clientes')
+          .update({ eliminado: true })
+          .eq('telefono', phone);
+
+        if (error) throw error;
+      } else {
+        // Si no existe, crear con eliminado en true
+        const { error } = await supabase
+          .from('clientes')
+          .insert([{ 
+            telefono: phone, 
+            estado: 'Pendiente',
+            eliminado: true 
+          }]);
+
+        if (error) throw error;
+      }
+
+      // Actualizar estado local
+      await fetchClientesSupabase();
+      
+      toast({
+        title: 'Cliente eliminado',
+        description: 'El cliente ha sido eliminado correctamente',
+      });
+    } catch (error) {
+      console.error('Error al eliminar cliente:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo eliminar el cliente',
+        variant: 'destructive',
+      });
+    }
   };
 
   const filteredGroups = Object.values(groupedClients)
@@ -79,8 +237,9 @@ const Clients = ({ user }) => {
       return group;
     })
     .filter(group => {
-      // Filtrar las cards eliminadas
-      if (deletedCards.has(group.telefono)) return false;
+      // Filtrar las cards eliminadas según Supabase
+      const clienteSupabase = clientesSupabase[group.telefono];
+      if (clienteSupabase?.eliminado) return false;
       
       const searchLower = searchTerm.toLowerCase();
       const phoneMatch = group.telefono.toLowerCase().includes(searchLower);
@@ -118,7 +277,10 @@ const Clients = ({ user }) => {
             Ver Hoja
           </Button>
           <Button 
-            onClick={refetch} 
+            onClick={() => {
+              refetch();
+              fetchClientesSupabase();
+            }} 
             disabled={loading}
             className="bg-pink-600 hover:bg-pink-700"
           >
@@ -213,15 +375,15 @@ const Clients = ({ user }) => {
                   <button 
                     onClick={() => handleToggleCheck(group.telefono)}
                     className="text-gray-600 hover:text-green-600 transition-colors flex items-center gap-1"
-                    title={checkedCards[group.telefono] ? "Marcar como pendiente" : "Marcar como en espera del cliente"}
+                    title={clientesSupabase[group.telefono]?.estado === 'A la espera del cliente' ? "Marcar como pendiente" : "Marcar como en espera del cliente"}
                   >
-                    {checkedCards[group.telefono] ? (
+                    {clientesSupabase[group.telefono]?.estado === 'A la espera del cliente' ? (
                       <CheckSquare className="h-5 w-5 text-green-600" />
                     ) : (
                       <Square className="h-5 w-5" />
                     )}
                     <span className="text-[10px] text-gray-600">
-                      {checkedCards[group.telefono] ? "A la espera del cliente" : "Pendiente"}
+                      {clientesSupabase[group.telefono]?.estado || "Pendiente"}
                     </span>
                   </button>
                 </div>
