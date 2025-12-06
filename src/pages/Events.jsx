@@ -302,14 +302,6 @@ const Events = ({ user }) => {
                             placeholder="Precio"
                             className="h-8 w-24"
                           />
-                          <div className="flex gap-1 mt-1">
-                            <Button variant="ghost" size="icon" onClick={handleSaveInline} className="text-green-600 hover:text-green-700 h-6 w-6">
-                              <Check className="h-3 w-3" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={handleCancel} className="text-red-500 hover:text-red-600 h-6 w-6">
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
                         </TableCell>
                       </TableRow>
                     )}
